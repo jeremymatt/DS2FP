@@ -43,11 +43,14 @@ data_fn = 'data/Combined_n170c.csv'
 variables_fn = 'data/variables.csv'
 #Set of variables to include
 VariableSet = 'toy'
-#Remote location of data file
-URL = 'https://www.dropbox.com/s/mdyfysm8t583v9p/Combined_n170c.csv?dl=1'
 #flag to: Drop records with missing response variable
 #         Drop columns not in the selected set of variables
 Drop_extra=True
+
+"""
+#Remote location of data file
+"""
+URL = 'ENTER URL HERE'
 
     
 #Build the path to the pkl file

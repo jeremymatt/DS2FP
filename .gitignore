@@ -5,6 +5,7 @@
 *.xlsx
 *.docx
 *.pptx
+*.url
 
 # Compiled source #
 ###################
