@@ -19,6 +19,7 @@ from make_hist_fig import make_hist_fig
 from load_data import load_data
 from data_exploration import data_exploration
 from extract_areas import extract_areas
+from condense_deprivation import condense_deprivation
 
 
 def load_and_preprocess(data_fn,variables_fn,VariableSet,URL,Drop_extra):
@@ -186,8 +187,14 @@ def load_and_preprocess(data_fn,variables_fn,VariableSet,URL,Drop_extra):
     Questionable_todrop = [
             'nchctc']
     
-    #drop variables with no useable info
-    AreaData.drop(NoInfoToDrop,axis='columns',inplace=True)
+    vars_to_drop = [val for val in list(AreaData.keys()) if val in NoInfoToDrop]
+    
+    if len(vars_to_drop)>0:
+        #drop variables with no useable info
+        AreaData.drop(vars_to_drop,axis='columns',inplace=True)
+        
+    
+    AreaData = condense_deprivation(AreaData,variables,drop_vars=True)
     
     #Build the save file string
     save_file = '{}_{}_processed.pkl'.format(data_fn.split('.')[0],VariableSet)

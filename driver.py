@@ -13,6 +13,7 @@ import re
 #from causalinference import CausalModel as CM
 import pickle as pkl
 import sys
+import os
 
 try: 
     import dowhy
@@ -39,10 +40,12 @@ from load_and_preprocess import load_and_preprocess
 
 #Local locn of datafile
 data_fn = 'data/Combined_n170c.csv'
+data_fn = os.path.normpath(data_fn) #convert to use OS-specific separators
 #Local location of variables descriptor file
 variables_fn = 'data/variables.csv'
+variables_fn = os.path.normpath(variables_fn) #convert to use OS-specific separators
 #Set of variables to include
-VariableSet = 'toy'
+VariableSet = 'testing'
 #flag to: Drop records with missing response variable
 #         Drop columns not in the selected set of variables
 Drop_extra=True
@@ -50,12 +53,14 @@ Drop_extra=True
 """
 #Remote location of data file
 """
-URL = 'ENTER URL HERE'
+f = open('data_url.url','r')
+URL = f.read()
+f.close()
 
     
 #Build the path to the pkl file
 pkl_file = '{}_{}_processed.pkl'.format(data_fn.split('.')[0],VariableSet)
-file = open(pkl_file,'rb')
+
 #Try to open the file in write binary mode
 try: file = open(pkl_file,'rb')
 except:
@@ -92,8 +97,24 @@ AreaData['treatment'] = 0
 
 AreaData['treatment'][AreaData['total_income']>AreaData['income_median']]=1
 
-model = CausalModel(
-        data=AreaData,
-        treatment=data['treatment'],
-        outcome = data['nlosat'],
-        common_causes = data[match_vars])
+#model = CausalModel(
+#        data=AreaData,
+#        treatment='treatment',
+#        outcome = 'nlosat',
+#        common_causes = match_vars)
+
+
+#
+#DeprivationVars = variables['Variable'][variables['m_dep']=='y']
+#DeprivationVars = [val for val in DeprivationVars if val in set(AreaData.keys())]
+#AreaData['mat_dep'] = 0
+#for var in DeprivationVars:
+#    AreaData['mat_dep'][AreaData[var] == 2]+=1
+#
+#depvar = list(DeprivationVars)
+#depvar.extend(['mat_dep'])
+#AreaData = condense_deprivation(AreaData,variables,drop_vars=True)
+
+
+
+
