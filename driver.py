@@ -38,6 +38,9 @@ from lst_not_in import lst_not_in
 
 from load_and_preprocess import load_and_preprocess
 
+from IPython import get_ipython
+get_ipython().run_line_magic('matplotlib', 'inline')
+
 #Local locn of datafile
 data_fn = 'data/Combined_n170c.csv'
 data_fn = os.path.normpath(data_fn) #convert to use OS-specific separators
@@ -95,14 +98,43 @@ match_vars = lst_not_in(all_vars,not_match_vars)
 
 AreaData['treatment'] = 0
 
-AreaData['treatment'][AreaData['total_income']>AreaData['income_median']]=1
+     
+AreaData.loc[AreaData['total_income']>AreaData['income_median'],'treatment']=1
 
-#model = CausalModel(
-#        data=AreaData,
-#        treatment='treatment',
-#        outcome = 'nlosat',
-#        common_causes = match_vars)
+vals = ['nhhsgcc', 'nedsscmp',
+       'njbhruw', 'njbn', 'njbmsall', 'ntchave', 'nrchave', 'nmrcms', 'nlosat',
+        'nlspact', 'nlssmkf',
+       'nlsdrkf', 'nlslanh', 'nlslatr', 'nlsrelsp', 'nlesep', 'nlebth',
+       'nleins', 'total_income','nhgsex', 'nhgage', 'mat_dep',
+       'treatment']
 
+AreaData_small = pd.DataFrame(AreaData[vals])
+
+AreaData_small[AreaData_small.isna()]=-1
+             
+model = CausalModel(
+        data=AreaData_small,
+        treatment='treatment',
+        outcome = 'nlosat',
+        common_causes = match_vars)
+
+identified_estimand = model.identify_effect()
+
+
+
+estimate = model.estimate_effect(identified_estimand,
+        method_name="backdoor.linear_regression",
+        test_significance=True
+        )
+print(estimate)
+print("Causal Estimate is " + str(estimate.value))
+
+res_random=model.refute_estimate(identified_estimand, estimate, method_name="random_common_cause")
+print(res_random)
+
+res_placebo=model.refute_estimate(identified_estimand, estimate,
+        method_name="placebo_treatment_refuter", placebo_type="permute")
+print(res_placebo)
 
 #
 #DeprivationVars = variables['Variable'][variables['m_dep']=='y']

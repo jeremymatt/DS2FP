@@ -30,7 +30,7 @@ def condense_deprivation(df,variables,drop_vars=True):
     df['mat_dep'] = 0
     for var in DeprivationVars:
         #For each deprivation variable equal to 2, increment the material dep variable
-        df['mat_dep'][df[var] == 2]+=1
+        df.loc[df[var] == 2,'mat_dep']+=1
         
     if drop_vars:
         #Drop source variables

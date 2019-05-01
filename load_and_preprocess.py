@@ -141,7 +141,7 @@ def load_and_preprocess(data_fn,variables_fn,VariableSet,URL,Drop_extra):
     #make histograms of each variable
     makeplots = True
     if makeplots:
-        save_dir = 'Figures\\simple_hist\\'
+        save_dir = 'Figures/simple_hist/'
         var_descriptions = dict(zip(list(variables['Variable']),list(variables['Label'])))
         for var_name in AreaData.keys()[4:]:
             data = list(AreaData[var_name])

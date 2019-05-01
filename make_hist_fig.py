@@ -6,6 +6,7 @@ Created on Thu Apr 25 23:21:27 2019
 """
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 def make_hist_fig(data,num_bins,save_dir,var_name,var_descriptions):
     """
@@ -36,5 +37,8 @@ def make_hist_fig(data,num_bins,save_dir,var_name,var_descriptions):
              ax1.get_xticklabels() + ax1.get_yticklabels()):
         item.set_fontsize(font_size)
         
-    fig.savefig(save_dir+var_name+'.png')
+    breakhere = 1
+    
+    save_dir = os.path.normpath(save_dir+var_name+'.png')
+    fig.savefig(save_dir)
     plt.close(fig)
