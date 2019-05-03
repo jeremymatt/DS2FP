@@ -18,7 +18,7 @@ import os
 try: 
     import dowhy
 except:
-    str1 = '\n\n==> DoWhy causal inference package did not load\n'
+    str1 = '\n\n==> DoWhy causal inference package did not load, may not be installed\n'
     str2 = '==> Installation Instructions:\n'
     str3 = '==>    1. Clone the repository https://github.com/Microsoft/dowhy.git\n'
     str4 = '==>    2. Run python setup.py install from the repo directory'
@@ -111,16 +111,23 @@ vals = ['nhhsgcc', 'nedsscmp',
 AreaData_small = pd.DataFrame(AreaData[vals])
 
 AreaData_small[AreaData_small.isna()]=-1
+
+AreaData_test = pd.DataFrame(AreaData)
+AreaData_test[AreaData_test.isna()]=-1
+
+
              
 model = CausalModel(
-        data=AreaData_small,
-        treatment='treatment',
+        data=AreaData_test,
+        treatment='total_income',
         outcome = 'nlosat',
         common_causes = match_vars)
 
 identified_estimand = model.identify_effect()
 
 
+get_ipython().run_line_magic('matplotlib', 'qt5')
+model.view_model()
 
 estimate = model.estimate_effect(identified_estimand,
         method_name="backdoor.linear_regression",
@@ -135,6 +142,8 @@ print(res_random)
 res_placebo=model.refute_estimate(identified_estimand, estimate,
         method_name="placebo_treatment_refuter", placebo_type="permute")
 print(res_placebo)
+
+
 
 #
 #DeprivationVars = variables['Variable'][variables['m_dep']=='y']
