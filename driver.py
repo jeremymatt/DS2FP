@@ -39,6 +39,7 @@ from lst_not_in import lst_not_in
 from load_and_preprocess import load_and_preprocess
 
 from IPython import get_ipython
+from IPython.display import Image, display
 get_ipython().run_line_magic('matplotlib', 'inline')
 
 #Local locn of datafile
@@ -101,12 +102,16 @@ AreaData['treatment'] = 0
      
 AreaData.loc[AreaData['total_income']>AreaData['income_median'],'treatment']=1
 
+#vals = ['nhhsgcc', 'nedsscmp',
+#       'njbhruw', 'njbn', 'njbmsall', 'ntchave', 'nrchave', 'nmrcms', 'nlosat',
+#        'nlspact', 'nlssmkf',
+#       'nlsdrkf', 'nlslanh', 'nlslatr', 'nlsrelsp', 'nlesep', 'nlebth',
+#       'nleins', 'total_income','income_median','nhgsex', 'nhgage', 'mat_dep',
+#       'treatment']
+
 vals = ['nhhsgcc', 'nedsscmp',
        'njbhruw', 'njbn', 'njbmsall', 'ntchave', 'nrchave', 'nmrcms', 'nlosat',
-        'nlspact', 'nlssmkf',
-       'nlsdrkf', 'nlslanh', 'nlslatr', 'nlsrelsp', 'nlesep', 'nlebth',
-       'nleins', 'total_income','nhgsex', 'nhgage', 'mat_dep',
-       'treatment']
+       'nleins', 'total_income','income_median','nhgsex', 'nhgage', ]
 
 AreaData_small = pd.DataFrame(AreaData[vals])
 
@@ -115,11 +120,14 @@ AreaData_small[AreaData_small.isna()]=-1
 AreaData_test = pd.DataFrame(AreaData)
 AreaData_test[AreaData_test.isna()]=-1
 
+AreaData_test['treatment'] = AreaData_test['total_income']/AreaData_test['income_median']
+AreaData_small['treatment'] = AreaData_small['total_income']/AreaData_small['income_median']
 
+AreaData_small.drop('total_income',axis='columns',inplace=True)
              
 model = CausalModel(
-        data=AreaData_test,
-        treatment='total_income',
+        data=AreaData_small,
+        treatment='treatment',
         outcome = 'nlosat',
         common_causes = match_vars)
 
@@ -128,6 +136,7 @@ identified_estimand = model.identify_effect()
 
 get_ipython().run_line_magic('matplotlib', 'qt5')
 model.view_model()
+display(Image(filename="causal_model.png"))
 
 estimate = model.estimate_effect(identified_estimand,
         method_name="backdoor.linear_regression",
@@ -155,7 +164,7 @@ print(res_placebo)
 #depvar = list(DeprivationVars)
 #depvar.extend(['mat_dep'])
 #AreaData = condense_deprivation(AreaData,variables,drop_vars=True)
-
-
-
-
+#
+#
+#
+#
