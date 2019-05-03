@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import re
 from causalinference import CausalModel as CM
+import os
 
 #JEM functions
 from PerPersVar_condense import PerPersVar_condense
@@ -19,9 +20,11 @@ from make_hist_fig import make_hist_fig
 from load_data import load_data
 
 #Local locn of datafile
-data_fn = 'data\\Combined_n170c.csv'
+data_fn = 'data/Combined_n170c.csv'
+data_fn = os.path.normpath(data_fn)
 #Local location of variables descriptor file
-variables_fn = 'data\\variables.csv'
+variables_fn = 'data/variables.csv'
+variables_fn = os.path.normpath(variables_fn)
 #Set of variables to include
 VariableSet = 'toy'
 #Remote location of data file
@@ -74,16 +77,18 @@ DataSubset['ClothCon'] = DataSubset[ClothVars].sum(axis=1)
 #Find flags (values less than 0) and set all flags to -1.
 DataSubset[DataSubset<0] = -1
 
-
+plt.figure()
 plt.hist(DataSubset[responseVar],bins=11)
-
+plt.xlabel('Response Variable (nlosat)')
 
 var = 'nhifeft' #total income
 #var2 = 'nhifdit' #Disposable income
 var_p = var+'p'
 var_n = var+'n'
 
+plt.figure()
 plt.hist(DataSubset[var_p]-DataSubset[var_n],log=True,bins=100)
+plt.xlabel('Total income (including negative incomes)')
 DataSubset[var_p].max()
 DataSubset[var_n].mode()
 
@@ -126,11 +131,22 @@ DataSubset['disposable_income']= d_inc
 #Drop source columns
 DataSubset.drop([total_p,total_n,disp_p,disp_n],axis='columns',inplace=True)
 
+plt.figure()
 plt.plot(d_inc,t_inc,'.')
+plt.xlabel('disposable income')
+plt.ylabel('total income')
 
+plt.figure()
 plt.plot(t_inc,DataSubset['DiscCon'],'.')
-plt.plot(t_inc,DataSubset['ClothCon'],'.')
+plt.xlabel('total income')
+plt.ylabel('disposable consumption')
 
+plt.figure()
+plt.plot(t_inc,DataSubset['ClothCon'],'.')
+plt.xlabel('total income')
+plt.ylabel('cloting consumption')
+
+plt.figure()
 sns.pairplot(DataSubset[['total_income','disposable_income','DiscCon','ClothCon',responseVar]])
 #
 #t = DataSubset[DataSubset.keys()][DataSubset['total_income']==1457066]
@@ -149,6 +165,7 @@ print('\n{} records dropped due to unexpected disposable income of exactly $837,
 
 
 
+plt.figure()
 sns.pairplot(DataSubset[['total_income','disposable_income','DiscCon','ClothCon',responseVar]])
 
 #
@@ -200,6 +217,7 @@ for loc in LocList:
     AreaData = pd.concat([AreaData,CurData])
 print('{} subjects in total ({} non-capital-city subjects dropped)'.format(NumSubjects,DataSubset.shape[0]-NumSubjects)) 
 
+plt.figure()
 sns.pairplot(AreaData[['total_income','disposable_income','DiscCon','ClothCon',responseVar]])
 
 
@@ -222,8 +240,10 @@ if makeplots:
         data = list(AreaData[var_name])
         num_bins = np.sqrt(len(data)).round().astype(int)
         make_hist_fig(data,num_bins,save_dir,var_name,var_descriptions)
-        
-plt.hist(AreaData['nhwnetwn'][AreaData['nhwnetwn']<2000000],bins=10,log=True)
+   
+plt.figure()     
+plt.hist(AreaData['nhwnetwn'][AreaData['nhwnetwn']<200000],bins=10,log=True)
+plt.xlabel('total net worth for households w/ networth under 200k')
 
 
 #Variables that have a very high proportion of missingness and/or are duplicated
