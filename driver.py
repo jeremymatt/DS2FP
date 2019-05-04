@@ -10,7 +10,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import re
-#from causalinference import CausalModel as CM
 import pickle as pkl
 import sys
 import os
@@ -51,7 +50,7 @@ data_fn = os.path.normpath(data_fn) #convert to use OS-specific separators
 variables_fn = 'data/variables.csv'
 variables_fn = os.path.normpath(variables_fn) #convert to use OS-specific separators
 #Set of variables to include
-VariableSet = 'testing'
+VariableSet = 'toy'
 #flag to: Drop records with missing response variable
 #         Drop columns not in the selected set of variables
 Drop_extra=True
@@ -85,24 +84,25 @@ AreaData,variables,LocVals,LocNames,LocVar = pkl_vars
 #build a list of the predictor variables
 pred_roots = ['clothing','disc','income']
 pred_suffix = ['mean','std','median']
-predictor_vars = ['{}_{}'.format(root,suffix) for root in pred_roots for suffix in pred_suffix]
+predictor_centrals = ['{}_{}'.format(root,suffix) for root in pred_roots for suffix in pred_suffix]
 
 #Build a list of variables to exclude from the matching block. 
 #These are the predictor variables and the output variable
-not_match_vars = list(predictor_vars)
-not_match_vars.extend(['nlosat'])
-not_match_vars = list(not_match_vars)
+#not_match_vars = list(predictor_vars)
+#not_match_vars.extend(['nlosat'])
 
-#Make a list of the dataframe keys
-all_vars = list(AreaData.keys())
 
-#Extract the variables to do the matching on
-match_vars = lst_not_in(all_vars,not_match_vars)
+#
+##Make a list of the dataframe keys
+#all_vars = list(AreaData.keys())
+#
+##Extract the variables to do the matching on
+#match_vars = lst_not_in(all_vars,not_match_vars)
 
-AreaData['treatment'] = 0
-
-     
-AreaData.loc[AreaData['total_income']>AreaData['income_median'],'treatment']=1
+#AreaData['treatment'] = 0
+#
+#     
+#AreaData.loc[AreaData['total_income']>AreaData['income_median'],'treatment']=1
 
 #vals = ['nhhsgcc', 'nedsscmp',
 #       'njbhruw', 'njbn', 'njbmsall', 'ntchave', 'nrchave', 'nmrcms', 'nlosat',
@@ -111,20 +111,42 @@ AreaData.loc[AreaData['total_income']>AreaData['income_median'],'treatment']=1
 #       'nleins', 'total_income','income_median','nhgsex', 'nhgage', 'mat_dep',
 #       'treatment']
 
-vals = ['nhhsgcc', 'nedsscmp',
-       'njbhruw', 'njbn', 'njbmsall', 'ntchave', 'nrchave', 'nmrcms', 'nlosat',
-       'nleins', 'total_income','income_median','nhgsex', 'nhgage', ]
-x_vars = ['nhhsgcc', 'nedsscmp','njbhruw', 'njbn', 'njbmsall', 'ntchave','nhgsex', 'nhgage', ]
+#vals = ['nhhsgcc', 'nedsscmp',
+#       'njbhruw', 'njbn', 'njbmsall', 'ntchave', 'nrchave', 'nmrcms', 'nlosat',
+#       'nleins', 'total_income','income_median','nhgsex', 'nhgage', ]
+#x_vars = ['nhhsgcc', 'nedsscmp','njbhruw', 'njbn', 'njbmsall', 'ntchave','nhgsex', 'nhgage', ]
 
-AreaData_small = pd.DataFrame(AreaData[vals])
 
-AreaData_small[AreaData_small.isna()]=-1
+num_records = AreaData.shape[0]
+AreaData[AreaData.isna()]=-1
+
+percent_missing = [len(AreaData[AreaData[var]==-1])*100/num_records for var in AreaData.keys()]
+
+lz = list(zip(percent_missing,AreaData.keys()))
+lz.sort()
+
+force_keep = not_match_vars.extend(predictor_centrals)
+
+cutoff_percent = 1
+to_drop = [tpl[1] for tpl in lz if tpl[0]>cutoff_percent]
+to_drop = [val for val in to_drop if val not in ['total_disc','total_clothing']]
+
+vars_exclude_from_x = ['xwaveid','nhhrhid','nhhpno','nhhrpid']
+vars_exclude_from_x.extend(predictor_centrals)
+vars_exclude_from_x.extend(['treatment_binary','nlosat','treatment'])
+vars_exclude_from_x.extend(['total_income','total_disc','total_clothing'])
+
+AreaData_small = pd.DataFrame(AreaData)
+AreaData_small.drop(to_drop,axis='columns',inplace=True)
+
 
 #AreaData_test = pd.DataFrame(AreaData)
 #AreaData_test[AreaData_test.isna()]=-1
 
 #AreaData_test['treatment'] = AreaData_test['total_income']/AreaData_test['income_median']
-AreaData_small['treatment'] = AreaData_small['total_income']/AreaData_small['income_median']
+source_var = 'income'
+central_tendancy = 'mean'
+AreaData_small['treatment'] = AreaData_small['total_'+source_var]/AreaData_small[source_var+'_mean']
 AreaData_small['treatment_binary'] = 0
 AreaData_small.loc[AreaData_small['treatment']>1,'treatment_binary'] = 1
 
@@ -133,9 +155,35 @@ df = pd.DataFrame(AreaData_small)
 
 D = np.array(AreaData_small['treatment_binary'])
 Y = np.array(AreaData_small['nlosat'])
+AreaData_small.drop(admin_variables,axis='columns',inplace=True)
+x_vars = [val for val in AreaData_small.keys() if val not in vars_exclude_from_x]
 X = np.array(AreaData_small[x_vars])
 
 causal = CausalModel(Y,D,X)
+print(causal.summary_stats)
+causal.est_via_ols()
+#print(causal.estimates)
+causal.est_propensity()
+#print(causal.propensity)
+causal.cutoff
+causal.trim()
+#causal.cutoff
+#print(causal.summary_stats)
+#causal.stratify()
+##print(causal.strata)
+#
+#for stratum in causal.strata:
+#    stratum.est_via_ols(adj=1)
+#
+#ate = [stratum.estimates['ols']['ate'] for stratum in causal.strata]
+
+#causal.est_via_ols()
+#causal.est_via_weighting()
+#causal.est_via_blocking()
+causal.est_via_matching(bias_adj=True)
+print(causal.estimates)
+
+
 
 
 

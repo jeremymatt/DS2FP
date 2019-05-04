@@ -48,12 +48,12 @@ def load_and_preprocess(data_fn,variables_fn,VariableSet,URL,Drop_extra):
     #Variables of 'discretionary' consumption (cigarettes, alcohol, meals out, etc)
     DiscVars = variables['Variable'][variables['Disc']=='y']
     #Build a 'discretionary' consumption variable add to the dataset
-    DataSubset['DiscCon'] = DataSubset[DiscVars].sum(axis=1)
+    DataSubset['total_disc'] = DataSubset[DiscVars].sum(axis=1)
     
     #List of clothing spending variables
     ClothVars = variables['Variable'][variables['Clothing']=='y']
     #Build clothign spending variable and add to the dataset
-    DataSubset['ClothCon'] = DataSubset[ClothVars].sum(axis=1)
+    DataSubset['total_clothing'] = DataSubset[ClothVars].sum(axis=1)
     
     
     #Find flags (values less than 0) and set all flags to -1.
@@ -65,7 +65,7 @@ def load_and_preprocess(data_fn,variables_fn,VariableSet,URL,Drop_extra):
     
     
     plt.figure()
-    sns.pairplot(DataSubset[['total_income','disposable_income','DiscCon','ClothCon',responseVar]])
+    sns.pairplot(DataSubset[['total_income','disposable_income','total_disc','total_clothing',responseVar]])
     #
     #t = DataSubset[DataSubset.keys()][DataSubset['total_income']==1457066]
     #todrop = t.index
@@ -83,7 +83,7 @@ def load_and_preprocess(data_fn,variables_fn,VariableSet,URL,Drop_extra):
     
     
     plt.figure()
-    sns.pairplot(DataSubset[['total_income','disposable_income','DiscCon','ClothCon',responseVar]])
+    sns.pairplot(DataSubset[['total_income','disposable_income','total_disc','total_clothing',responseVar]])
     
     
     
@@ -98,11 +98,11 @@ def load_and_preprocess(data_fn,variables_fn,VariableSet,URL,Drop_extra):
     DataSubset.drop(['nhifeftp','nhifeftn','nhifditp','nhifditn'],axis='columns',inplace=True)
     #Drop records where economic data is questionable
     DataSubset = drop_illogical(DataSubset,'disposable_income','total_income')
-    DataSubset = drop_illogical(DataSubset,'ClothCon','total_income')
-    DataSubset = drop_illogical(DataSubset,'DiscCon','total_income')
+    DataSubset = drop_illogical(DataSubset,'total_clothing','total_income')
+    DataSubset = drop_illogical(DataSubset,'total_disc','total_income')
     #Set negative values to NAN (these entries may be flags)
-    DataSubset['DiscCon'][DataSubset['DiscCon']<0] = np.nan     #negative spending on alc/cig/meal
-    DataSubset['ClothCon'][DataSubset['ClothCon']<0] = np.nan   #neg spend on clothing
+    DataSubset['total_disc'][DataSubset['total_disc']<0] = np.nan     #negative spending on alc/cig/meal
+    DataSubset['total_clothing'][DataSubset['total_clothing']<0] = np.nan   #neg spend on clothing
     DataSubset['njbhruw'][DataSubset['njbhruw']>7*24] = np.nan  # number of hours worked per week greater than number of hours in a week
     
     #name of the location variable
@@ -125,7 +125,7 @@ def load_and_preprocess(data_fn,variables_fn,VariableSet,URL,Drop_extra):
     AreaData = extract_areas(DataSubset,LocNames,LocVar)
     
     plt.figure()
-    sns.pairplot(AreaData[['total_income','disposable_income','DiscCon','ClothCon',responseVar]])
+    sns.pairplot(AreaData[['total_income','disposable_income','total_disc','total_clothing',responseVar]])
     
     
     
@@ -139,7 +139,7 @@ def load_and_preprocess(data_fn,variables_fn,VariableSet,URL,Drop_extra):
         AreaData = PerPersVar_condense(AreaData,root,per_num_var,DropSource=True)
     
     #make histograms of each variable
-    makeplots = True
+    makeplots = False
     if makeplots:
         save_dir = 'Figures/simple_hist/'
         var_descriptions = dict(zip(list(variables['Variable']),list(variables['Label'])))

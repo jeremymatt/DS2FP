@@ -36,18 +36,18 @@ def extract_areas(DataSubset,LocNames,LocVar):
         print('{} participants in {}'.format(CurNum,LocNames[loc]))
         #Extract and store the variable means
         CurData['income_mean']=CurData['total_income'].mean()
-        CurData['clothing_mean'] = CurData['ClothCon'].mean()
-        CurData['disc_mean'] = CurData['DiscCon'].mean()
+        CurData['clothing_mean'] = CurData['total_clothing'].mean()
+        CurData['disc_mean'] = CurData['total_disc'].mean()
         
         #Extract and store the variable standard deviations
         CurData['income_std'] = CurData['total_income'].std()
-        CurData['clothing_std'] = CurData['ClothCon'].std()
-        CurData['disc_std'] = CurData['DiscCon'].std()
+        CurData['clothing_std'] = CurData['total_clothing'].std()
+        CurData['disc_std'] = CurData['total_disc'].std()
         
         #Extract and store the variable medians
         CurData['income_median'] = CurData['total_income'].median()
-        CurData['clothing_median'] = CurData['ClothCon'].median()
-        CurData['disc_median'] = CurData['DiscCon'].median()
+        CurData['clothing_median'] = CurData['total_clothing'].median()
+        CurData['disc_median'] = CurData['total_disc'].median()
         #Append the current area's data to the output dataframe
         AreaData = pd.concat([AreaData,CurData])
     #Give number of subjects info to the user

@@ -73,16 +73,16 @@ def data_exploration(DataSubset,responseVar,DiscVars):
     plt.ylabel('Annual total income ($)')
     
     plt.figure()
-    plt.plot(t_inc,DataSubset['DiscCon'],'.')
+    plt.plot(t_inc,DataSubset['total_disc'],'.')
     plt.ylabel('Annual spending on alcohol/cigarettes/meals-eaten-out ($)')
     plt.xlabel('Annual total income ($)')
     
     plt.figure()
-    plt.plot(t_inc,DataSubset['ClothCon'],'.')
+    plt.plot(t_inc,DataSubset['total_clothing'],'.')
     plt.ylabel('Annual spending on clothing ($)')
     plt.xlabel('Annual total income ($)')
     
     plt.figure()
-    plt.plot(DataSubset['DiscCon'],DataSubset['ClothCon'],'.')
+    plt.plot(DataSubset['total_disc'],DataSubset['total_clothing'],'.')
     plt.ylabel('Annual spending on clothing ($)')
     plt.xlabel('Annual spending on alcohol/cigarettes/meals-eaten-out ($)')
