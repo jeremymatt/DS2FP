@@ -14,7 +14,7 @@ import re
 import pickle as pkl
 import sys
 import os
-import causalinference
+from causalinference import CausalModel
 
 try: 
     import dowhy
@@ -24,9 +24,9 @@ except:
     str3 = '==>    1. Clone the repository https://github.com/Microsoft/dowhy.git\n'
     str4 = '==>    2. Run python setup.py install from the repo directory'
     sys.exit(str1+str2+str3+str4)
-
-from dowhy.do_why import CausalModel
-import dowhy.plotter
+#
+#from dowhy.do_why import CausalModel
+#import dowhy.plotter
 
 #JEM functions
 from PerPersVar_condense import PerPersVar_condense
@@ -114,6 +114,7 @@ AreaData.loc[AreaData['total_income']>AreaData['income_median'],'treatment']=1
 vals = ['nhhsgcc', 'nedsscmp',
        'njbhruw', 'njbn', 'njbmsall', 'ntchave', 'nrchave', 'nmrcms', 'nlosat',
        'nleins', 'total_income','income_median','nhgsex', 'nhgage', ]
+x_vars = ['nhhsgcc', 'nedsscmp','njbhruw', 'njbn', 'njbmsall', 'ntchave','nhgsex', 'nhgage', ]
 
 AreaData_small = pd.DataFrame(AreaData[vals])
 
@@ -130,39 +131,53 @@ AreaData_small.loc[AreaData_small['treatment']>1,'treatment_binary'] = 1
 var_name = 'treatment_binary'
 df = pd.DataFrame(AreaData_small)
 
+D = np.array(AreaData_small['treatment_binary'])
+Y = np.array(AreaData_small['nlosat'])
+X = np.array(AreaData_small[x_vars])
 
-#AreaData_small.drop('total_income',axis='columns',inplace=True)
-mask = (df['treatment_binary']==1)&(df[var_name]!=-1)
-treatment_vals = pd.Series(df.loc[mask,var_name])
-mask = (df['treatment_binary']==0)&(df[var_name]!=-1)
-control_vals = pd.Series(df.loc[mask,var_name])
-max_val = max([treatment_vals.max(),control_vals.max()])
-min_val = min([treatment_vals.min(),control_vals.min()])
-rng = (min_val,max_val)
-
-treatment_vals = norm_zero_one(treatment_vals,rng)
-control_vals = norm_zero_one(control_vals,rng)
+causal = CausalModel(Y,D,X)
 
 
-#mi = -10
-#ma = 10
-#val = pd.Series([-10,-5,0,5,7,10])
-#norm = norm_zero_one(val,(mi,ma))
-#print('norm:{}'.format(norm))
 
-tv_len = len(treatment_vals)
-cv_len = len(control_vals)
-num_neg = len(AreaData_small[AreaData_small[var_name]==-1])
-num_records = AreaData_small.shape[0]
-print('{} total records. {}(treatment)+{}(control)+{}(-1)={}'.format(
-        num_records,
-        tv_len,
-        cv_len,
-        num_neg,
-        tv_len+cv_len+num_neg))
 
-association = treatment_vals.mean()-control_vals.mean()
-print('Association: {}'.format(association))
+#
+##AreaData_small.drop('total_income',axis='columns',inplace=True)
+#mask = (df['treatment_binary']==1)&(df[var_name]!=-1)
+#treatment_vals = pd.Series(df.loc[mask,var_name])
+#mask = (df['treatment_binary']==0)&(df[var_name]!=-1)
+#control_vals = pd.Series(df.loc[mask,var_name])
+#max_val = max([treatment_vals.max(),control_vals.max()])
+#min_val = min([treatment_vals.min(),control_vals.min()])
+#rng = (min_val,max_val)
+#
+#treatment_vals = norm_zero_one(treatment_vals,rng)
+#control_vals = norm_zero_one(control_vals,rng)
+#
+#
+##mi = -10
+##ma = 10
+##val = pd.Series([-10,-5,0,5,7,10])
+##norm = norm_zero_one(val,(mi,ma))
+##print('norm:{}'.format(norm))
+#
+#tv_len = len(treatment_vals)
+#cv_len = len(control_vals)
+#num_neg = len(AreaData_small[AreaData_small[var_name]==-1])
+#num_records = AreaData_small.shape[0]
+#print('{} total records. {}(treatment)+{}(control)+{}(-1)={}'.format(
+#        num_records,
+#        tv_len,
+#        cv_len,
+#        num_neg,
+#        tv_len+cv_len+num_neg))
+#
+#association = treatment_vals.mean()-control_vals.mean()
+#print('Association: {}'.format(association))
+
+
+
+
+
 
 
 
