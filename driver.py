@@ -8,6 +8,7 @@ Created on Sat Mar 30 15:50:01 2019
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 import seaborn as sns
 import re
 import pickle as pkl
@@ -144,76 +145,94 @@ AreaData_small.drop(to_drop,axis='columns',inplace=True)
 #AreaData_test[AreaData_test.isna()]=-1
 
 #AreaData_test['treatment'] = AreaData_test['total_income']/AreaData_test['income_median']
-source_var = 'income'
+source_var_list = ['income','disc','clothing']
 central_tendancy = 'mean'
 #central_tendancy = 'median'
-AreaData_small['treatment'] = AreaData_small['total_'+source_var]/AreaData_small[source_var+'_'+central_tendancy]
-AreaData_small['treatment_binary'] = 0
-AreaData_small.loc[AreaData_small['treatment']>1,'treatment_binary'] = 1
+effect =[]
+for source_var in source_var_list:
+    AreaData_small['treatment'] = AreaData_small['total_'+source_var]/AreaData_small[source_var+'_'+central_tendancy]
+    AreaData_small['treatment_binary'] = 0
+    AreaData_small.loc[AreaData_small['treatment']>1,'treatment_binary'] = 1
+    
+    #var_name = 'treatment_binary'
+    df = pd.DataFrame(AreaData_small)
+    
+    area_set = set(df['nhhsgcc'])
+    
+    
+    
+    D = np.array(AreaData_small['treatment_binary'])
+    Y = np.array(AreaData_small['nlosat'])
+    #AreaData_small.drop(admin_variables,axis='columns',inplace=True)
+    x_vars = [val for val in AreaData_small.keys() if val not in vars_exclude_from_x]
+    
+    var_to_skip = 'mat_dep3'
+    x_vars = [val for val in x_vars if val!=var_to_skip]
+    
+    X = np.array(AreaData_small[x_vars])
+    
+    
+    
+    causal = CausalModel(Y,D,X)
+    print(causal.summary_stats)
+    
+    r_diff_init = causal.summary_stats['rdiff']
+    n_diff_init = causal.summary_stats['ndiff']
+    
+    causal.est_via_ols()
+    #print(causal.estimates)
+    causal.est_propensity()
+    #print(causal.propensity)
+    causal.cutoff
+    causal.trim()
+    #causal.cutoff
+    #print(causal.summary_stats)
+    #causal.stratify()
+    ##print(causal.strata)
+    #
+    #for stratum in causal.strata:
+    #    stratum.est_via_ols(adj=1)
+    #
+    #ate = [stratum.estimates['ols']['ate'] for stratum in causal.strata]
+    
+    causal.est_via_ols()
+    causal.est_via_weighting()
+    #causal.est_via_blocking()
+    causal.est_via_matching(bias_adj=True)
+    print(causal.estimates)
+    print(causal.summary_stats)
+    
+    
+    r_diff_final = causal.summary_stats['rdiff']
+    n_diff_final = causal.summary_stats['ndiff']
+    ate = causal.estimates['matching']['ate']
+    ate_se = causal.estimates['matching']['ate_se']
+    
+    effect.append((ate,ate_se))
+    
+    #plt.bar(x_vars,n_diff_init)
+    #plt.bar(x_vars,n_diff_final)
+    
+    # make figures better for projector:
+    font = {'weight':'normal','size':14}
+    matplotlib.rc('font', **font)
+    matplotlib.rc('figure', figsize=(7.0, 5.0))
+    matplotlib.rc('xtick', labelsize=18) 
+    matplotlib.rc('ytick', labelsize=18) 
+    matplotlib.rc('legend',**{'fontsize':18})
+    
+    plt.figure()
+    ddff = pd.DataFrame(np.c_[n_diff_init,n_diff_final],index=x_vars)
+    ddff.rename({0:'before_match',1:'after_match'},axis='columns',inplace=True)
+    ddff.plot.bar()
+    plt.savefig(source_var+'-'+central_tendancy+'-balance.png')
+    plt.close()
 
-#var_name = 'treatment_binary'
-df = pd.DataFrame(AreaData_small)
 
-area_set = set(df['nhhsgcc'])
-
-
-
-D = np.array(AreaData_small['treatment_binary'])
-Y = np.array(AreaData_small['nlosat'])
-#AreaData_small.drop(admin_variables,axis='columns',inplace=True)
-x_vars = [val for val in AreaData_small.keys() if val not in vars_exclude_from_x]
-
-var_to_skip = 'mat_dep3'
-x_vars = [val for val in x_vars if val!=var_to_skip]
-
-X = np.array(AreaData_small[x_vars])
-
-
-
-causal = CausalModel(Y,D,X)
-print(causal.summary_stats)
-
-r_diff_init = causal.summary_stats['rdiff']
-n_diff_init = causal.summary_stats['ndiff']
-
-causal.est_via_ols()
-#print(causal.estimates)
-causal.est_propensity()
-#print(causal.propensity)
-causal.cutoff
-causal.trim()
-#causal.cutoff
-#print(causal.summary_stats)
-#causal.stratify()
-##print(causal.strata)
-#
-#for stratum in causal.strata:
-#    stratum.est_via_ols(adj=1)
-#
-#ate = [stratum.estimates['ols']['ate'] for stratum in causal.strata]
-
-causal.est_via_ols()
-causal.est_via_weighting()
-#causal.est_via_blocking()
-causal.est_via_matching(bias_adj=True)
-print(causal.estimates)
-print(causal.summary_stats)
-
-
-r_diff_final = causal.summary_stats['rdiff']
-n_diff_final = causal.summary_stats['ndiff']
-ate = causal.estimates['matching']['ate']
-ate_se = causal.estimates['matching']['ate_se']
-
-plt.bar(x_vars,n_diff_init)
-plt.bar(x_vars,n_diff_final)
-
-ddff = pd.DataFrame(np.c_[n_diff_init,n_diff_final],index=x_vars)
-ddff.rename({0:'before_match',1:'after_match'},axis='columns',inplace=True)
-ddff.plot.bar()
-
-
-
+y,std = list(zip(*effect))
+CE = 1.96*np.array(std)
+plt.errorbar(['income','discretionary','clothing'],y,yerr =CE,fmt='*',capsize = 10)
+plt.plot(['total income','discretionary','clothing'],[0,0,0])
 
 #
 ##AreaData_small.drop('total_income',axis='columns',inplace=True)
