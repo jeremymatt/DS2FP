@@ -125,7 +125,7 @@ percent_missing = [len(AreaData[AreaData[var]==-1])*100/num_records for var in A
 lz = list(zip(percent_missing,AreaData.keys()))
 lz.sort()
 
-force_keep = not_match_vars.extend(predictor_centrals)
+#force_keep = not_match_vars.extend(predictor_centrals)
 
 cutoff_percent = 1
 to_drop = [tpl[1] for tpl in lz if tpl[0]>cutoff_percent]
@@ -146,18 +146,25 @@ AreaData_small.drop(to_drop,axis='columns',inplace=True)
 #AreaData_test['treatment'] = AreaData_test['total_income']/AreaData_test['income_median']
 source_var = 'income'
 central_tendancy = 'mean'
-AreaData_small['treatment'] = AreaData_small['total_'+source_var]/AreaData_small[source_var+'_mean']
+central_tendancy = 'median'
+AreaData_small['treatment'] = AreaData_small['total_'+source_var]/AreaData_small[source_var+'_'+central_tendancy]
 AreaData_small['treatment_binary'] = 0
 AreaData_small.loc[AreaData_small['treatment']>1,'treatment_binary'] = 1
 
-var_name = 'treatment_binary'
+#var_name = 'treatment_binary'
 df = pd.DataFrame(AreaData_small)
+
+area_set = set(df['nhhsgcc'])
+
+
 
 D = np.array(AreaData_small['treatment_binary'])
 Y = np.array(AreaData_small['nlosat'])
-AreaData_small.drop(admin_variables,axis='columns',inplace=True)
+#AreaData_small.drop(admin_variables,axis='columns',inplace=True)
 x_vars = [val for val in AreaData_small.keys() if val not in vars_exclude_from_x]
 X = np.array(AreaData_small[x_vars])
+
+
 
 causal = CausalModel(Y,D,X)
 print(causal.summary_stats)
@@ -177,8 +184,8 @@ causal.trim()
 #
 #ate = [stratum.estimates['ols']['ate'] for stratum in causal.strata]
 
-#causal.est_via_ols()
-#causal.est_via_weighting()
+causal.est_via_ols()
+causal.est_via_weighting()
 #causal.est_via_blocking()
 causal.est_via_matching(bias_adj=True)
 print(causal.estimates)
