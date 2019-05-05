@@ -87,36 +87,6 @@ pred_roots = ['clothing','disc','income']
 pred_suffix = ['mean','std','median']
 predictor_centrals = ['{}_{}'.format(root,suffix) for root in pred_roots for suffix in pred_suffix]
 
-#Build a list of variables to exclude from the matching block. 
-#These are the predictor variables and the output variable
-#not_match_vars = list(predictor_vars)
-#not_match_vars.extend(['nlosat'])
-
-
-#
-##Make a list of the dataframe keys
-#all_vars = list(AreaData.keys())
-#
-##Extract the variables to do the matching on
-#match_vars = lst_not_in(all_vars,not_match_vars)
-
-#AreaData['treatment'] = 0
-#
-#     
-#AreaData.loc[AreaData['total_income']>AreaData['income_median'],'treatment']=1
-
-#vals = ['nhhsgcc', 'nedsscmp',
-#       'njbhruw', 'njbn', 'njbmsall', 'ntchave', 'nrchave', 'nmrcms', 'nlosat',
-#        'nlspact', 'nlssmkf',
-#       'nlsdrkf', 'nlslanh', 'nlslatr', 'nlsrelsp', 'nlesep', 'nlebth',
-#       'nleins', 'total_income','income_median','nhgsex', 'nhgage', 'mat_dep',
-#       'treatment']
-
-#vals = ['nhhsgcc', 'nedsscmp',
-#       'njbhruw', 'njbn', 'njbmsall', 'ntchave', 'nrchave', 'nmrcms', 'nlosat',
-#       'nleins', 'total_income','income_median','nhgsex', 'nhgage', ]
-#x_vars = ['nhhsgcc', 'nedsscmp','njbhruw', 'njbn', 'njbmsall', 'ntchave','nhgsex', 'nhgage', ]
-
 
 num_records = AreaData.shape[0]
 AreaData[AreaData.isna()]=-1
@@ -125,8 +95,6 @@ percent_missing = [len(AreaData[AreaData[var]==-1])*100/num_records for var in A
 
 lz = list(zip(percent_missing,AreaData.keys()))
 lz.sort()
-
-#force_keep = not_match_vars.extend(predictor_centrals)
 
 cutoff_percent = 1
 to_drop = [tpl[1] for tpl in lz if tpl[0]>cutoff_percent]
@@ -141,11 +109,6 @@ vars_exclude_from_x.extend(['disposable_income','mat_dep'])
 AreaData_small = pd.DataFrame(AreaData)
 AreaData_small.drop(to_drop,axis='columns',inplace=True)
 
-
-#AreaData_test = pd.DataFrame(AreaData)
-#AreaData_test[AreaData_test.isna()]=-1
-
-#AreaData_test['treatment'] = AreaData_test['total_income']/AreaData_test['income_median']
 source_var_list = ['income','disc','clothing']
 var_to_titles = {
         'income':'total income',
@@ -214,7 +177,6 @@ for source_var,ax,cut in tuples:
     ate_se = causal.estimates['ols']['ate_se']
     
     pre_effect.append((ate,ate_se))
-    
     
     
     #print(causal.estimates)
