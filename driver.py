@@ -199,7 +199,6 @@ for source_var,ax,cut in tuples:
     
     D = np.array(AreaData_small['treatment_binary'])
     Y = np.array(AreaData_small['nlosat'])
-    
     X = np.array(AreaData_small[x_vars])
     
     
@@ -223,15 +222,6 @@ for source_var,ax,cut in tuples:
     #print(causal.propensity)
     causal.cutoff=cut
     causal.trim()
-    #causal.cutoff
-    #print(causal.summary_stats)
-    #causal.stratify()
-    ##print(causal.strata)
-    #
-    #for stratum in causal.strata:
-    #    stratum.est_via_ols(adj=1)
-    #
-    #ate = [stratum.estimates['ols']['ate'] for stratum in causal.strata]
     
     causal.est_via_ols()
     causal.est_via_weighting()
@@ -252,11 +242,6 @@ for source_var,ax,cut in tuples:
     ate_se = causal.estimates['matching']['ate_se']
     effect_match.append((ate,ate_se))
     
-    #plt.bar(x_vars,n_diff_init)
-    #plt.bar(x_vars,n_diff_final)
-    
-    
-#    plt.figure()
     ddff = pd.DataFrame(np.c_[n_diff_init,n_diff_final],index=x_vars)
     ddff.rename({0:'before_match',1:'after_match'},axis='columns',inplace=True)
     ddff.plot.bar(ax=ax)
