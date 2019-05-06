@@ -127,9 +127,6 @@ def load_and_preprocess(data_fn,variables_fn,VariableSet,URL,Drop_extra):
     plt.figure()
     sns.pairplot(AreaData[['total_income','disposable_income','total_disc','total_clothing',responseVar]])
     
-    
-    
-    
     #Extract the per-person variables in the current data set
     PerPersVars = variables['Variable'][(variables[VariableSet]=='y')&(variables['per_person']=='y')]
     #Find the roots of the per-person variables

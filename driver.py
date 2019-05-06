@@ -9,10 +9,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-import seaborn as sns
-import re
 import pickle as pkl
-import sys
 import os
 from causalinference import CausalModel
 
@@ -29,19 +26,9 @@ from causalinference import CausalModel
 #import dowhy.plotter
 
 #JEM functions
-from PerPersVar_condense import PerPersVar_condense
-from drop_illogical import drop_illogical
-from make_hist_fig import make_hist_fig
-from load_data import load_data
-from data_exploration import data_exploration
-from extract_areas import extract_areas
-from lst_not_in import lst_not_in
-from norm_zero_one import norm_zero_one
-
 from load_and_preprocess import load_and_preprocess
 
 from IPython import get_ipython
-from IPython.display import Image, display
 get_ipython().run_line_magic('matplotlib', 'inline')
 
 #Local locn of datafile
@@ -87,38 +74,49 @@ pred_roots = ['clothing','disc','income']
 pred_suffix = ['mean','std','median']
 predictor_centrals = ['{}_{}'.format(root,suffix) for root in pred_roots for suffix in pred_suffix]
 
-
+#find the number of records and set nan valuse to -1
 num_records = AreaData.shape[0]
 AreaData[AreaData.isna()]=-1
 
+#Identify the percent of missing values in each variable and flag any variable
+#missing more than the cutoff_percent for removal from the data table
 percent_missing = [len(AreaData[AreaData[var]==-1])*100/num_records for var in AreaData.keys()]
-
 lz = list(zip(percent_missing,AreaData.keys()))
 lz.sort()
-
 cutoff_percent = 1
 to_drop = [tpl[1] for tpl in lz if tpl[0]>cutoff_percent]
-to_drop = [val for val in to_drop if val not in ['total_disc','total_clothing']]
+#Make sure not to drop any of the treatment variables
+to_drop = [val for val in to_drop if val not in ['total_income','total_disc','total_clothing']]
 
+#Build a list of variables that should not be included in the matching process
+#subject tracking variables
 vars_exclude_from_x = ['xwaveid','nhhrhid','nhhpno','nhhrpid']
+#central tendencies
 vars_exclude_from_x.extend(predictor_centrals)
+#treatment variables and the response variable
 vars_exclude_from_x.extend(['treatment_binary','nlosat','treatment'])
 vars_exclude_from_x.extend(['total_income','total_disc','total_clothing'])
+#disposable income is strongly correlated with total income
+#mat_dep is a linear combination of other variables
 vars_exclude_from_x.extend(['disposable_income','mat_dep'])
 
+#Export to a new dataframe and drop variables with too much missingness
 AreaData_small = pd.DataFrame(AreaData)
 AreaData_small.drop(to_drop,axis='columns',inplace=True)
+
 
 source_var_list = ['income','disc','clothing']
 var_to_titles = {
         'income':'total income',
         'disc':'discretionary spending',
         'clothing':'clothing spending'}
-central_tendancy = 'mean'
+
+#Set the central tendancy to be used in the analysis
+central_tendancy = 'mean' #mean or median
 #central_tendancy = 'median'
 
 
-# make figures better for projector:
+# make figures better for display:
 font = {'weight':'normal','size':14}
 matplotlib.rc('font', **font)
 matplotlib.rc('figure', figsize=(7.0, 5.0))
@@ -126,11 +124,12 @@ matplotlib.rc('xtick', labelsize=18)
 matplotlib.rc('ytick', labelsize=18) 
 matplotlib.rc('legend',**{'fontsize':18})
 
-f, axarr = plt.subplots(3, sharex=True, figsize=(13, 11), dpi= 80, facecolor='w', edgecolor='k')
-
+#initialize the covariate balance figure and set the ylabels
+f, axarr = plt.subplots(3, sharex=True, figsize=(13, 11), dpi= 80, facecolor='w', edgecolor='k'
 for ax in axarr:
     ax.set_ylabel('Norm. diff. \nin avg. covariate',fontsize=18)
     
+#cutoff values for dropping subjects based on the propensity score
 cutoff = [.3,.3,.3]
 tuples = list(zip(source_var_list,axarr,cutoff))
 pre_effect = []
@@ -141,69 +140,61 @@ effect_match = []
 #AreaData_small.drop(admin_variables,axis='columns',inplace=True)
 x_vars = [val for val in AreaData_small.keys() if val not in vars_exclude_from_x]
 
-var_to_skip = 'mat_dep3'
-x_vars = [val for val in x_vars if val!=var_to_skip]
-
+#Extract the descriptoins of each matching variable
 x_var_descriptions = {}
 for var in x_vars:
     x_var_descriptions[var] = list(variables[variables['Variable']==var]['Label'])
 
 for source_var,ax,cut in tuples:
+    #Calculate the binary treatment
     AreaData_small['treatment'] = AreaData_small['total_'+source_var]/AreaData_small[source_var+'_'+central_tendancy]
     AreaData_small['treatment_binary'] = 0
     AreaData_small.loc[AreaData_small['treatment']>1,'treatment_binary'] = 1
-    
-    #var_name = 'treatment_binary'
     df = pd.DataFrame(AreaData_small)
     
+    #Find the values of all area designations
     area_set = set(df['nhhsgcc'])
     
     
-    
+    #Extract the treatment, response, and matching data and store in arrays
     D = np.array(AreaData_small['treatment_binary'])
     Y = np.array(AreaData_small['nlosat'])
     X = np.array(AreaData_small[x_vars])
     
     
-    
+    #Init the causal model
     causal = CausalModel(Y,D,X)
-    print(causal.summary_stats)
-    
-    r_diff_init = causal.summary_stats['rdiff']
-    n_diff_init = causal.summary_stats['ndiff']
-    
-    causal.est_via_ols()
-    ate = causal.estimates['ols']['ate']
-    ate_se = causal.estimates['ols']['ate_se']
-    
-    pre_effect.append((ate,ate_se))
-    
-    
-    #print(causal.estimates)
-    causal.est_propensity()
-    #print(causal.propensity)
-    causal.cutoff=cut
-    causal.trim()
-    
-    causal.est_via_ols()
-    causal.est_via_weighting()
-    #causal.est_via_blocking()
-    causal.est_via_matching(bias_adj=True)
-#    print(causal.estimates)
 #    print(causal.summary_stats)
     
-    
-    r_diff_final = causal.summary_stats['rdiff']
-    n_diff_final = causal.summary_stats['ndiff']
+    #collect the pre-match balance and OLS estimates
+    r_diff_init = causal.summary_stats['rdiff']
+    n_diff_init = causal.summary_stats['ndiff']
+    causal.est_via_ols()
     ate = causal.estimates['ols']['ate']
     ate_se = causal.estimates['ols']['ate_se']
+    pre_effect.append((ate,ate_se))
     
+    #Estimate the propensity score, set the propensty cutoff, trim and estimate the effect
+    causal.est_propensity()
+    causal.cutoff=cut
+    causal.trim()
+    causal.est_via_ols()
+    causal.est_via_weighting()
+    causal.est_via_matching(bias_adj=True)
+    
+    #Store the post-match balance and effect estimates
+    r_diff_final = causal.summary_stats['rdiff']
+    n_diff_final = causal.summary_stats['ndiff']
+    
+    ate = causal.estimates['ols']['ate']
+    ate_se = causal.estimates['ols']['ate_se']
     effect_ols.append((ate,ate_se))
     
     ate = causal.estimates['matching']['ate']
     ate_se = causal.estimates['matching']['ate_se']
     effect_match.append((ate,ate_se))
     
+    #Plot the balance summary
     ddff = pd.DataFrame(np.c_[n_diff_init,n_diff_final],index=x_vars)
     ddff.rename({0:'before_match',1:'after_match'},axis='columns',inplace=True)
     ddff.plot.bar(ax=ax)
@@ -211,15 +202,12 @@ for source_var,ax,cut in tuples:
 
 
 f.savefig('Combined-'+central_tendancy+'-balance.png')
-#    plt.close()
     
 
-
+#Plot the pre and post match effect summary figure
 xlabels = ['income','discretionary','clothing']
 
 matplotlib.rc('figure', figsize=(9.0, 6.0))
-
-
 pre_y,pre_std = list(zip(*pre_effect))
 pre_CE = 1.96*np.array(pre_std)
 
@@ -242,5 +230,5 @@ plt.xticks(post_ols_xlocs,xlabels)
 plt.legend()
 plt.plot([1,3.5],[0,0],'b:')
 plt.ylabel('Effect Size (change in SWB)')
-plt.savefig('effect_summary.png')
+plt.savefig('effect_summary_'+central_tendancy+'.png')
 
